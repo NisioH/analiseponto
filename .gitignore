@@ -31,11 +31,12 @@ MANIFEST
 *.manifest
 *.spec
 
+Funcionarios.xlsx
 Ponto_Secador.txt
 Ponto_Sede.txt
-PontoColaboradores.txt
+Ponto_Algodoeira.txt
 Ponto_Escritorio.txt
-
+*.txt
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
