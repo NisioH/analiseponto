@@ -1,8 +1,11 @@
 import pandas as pd
 import io
 from datetime import datetime
+from datetime import date
+
 
 data_de_hoje = datetime.now().date()
+#date(2025, 11, 11)
 
 arquivos = ['Ponto_Algodoeira.txt', 'Ponto_Escritorio.txt', 'Ponto_Sede.txt', 'Ponto_Secador.txt']
 dfs_ponto = []
@@ -12,7 +15,7 @@ for arquivo in arquivos:
     dfs_ponto.append(df)
 df_ponto_raw = pd.concat(dfs_ponto, ignore_index=True)
 
-df_funcionarios = pd.read_excel(r'Funcionarios.xlsx')
+df_funcionarios = pd.read_excel(r'C:\Users\fazin\OneDrive\Documents\Nisio\Analise_Ponto\Funcionarios.xlsx')
 df_funcionarios['NIT_STR'] = df_funcionarios['NIT'].astype(str)
 nit_to_nome = df_funcionarios.set_index('NIT_STR')['Nome'].to_dict()
 nit_to_secao = df_funcionarios.set_index('NIT_STR')['Secao'].to_dict()
@@ -47,6 +50,31 @@ for index, row in df_ponto_raw.iterrows():
             continue
 
 df_ponto_validado = pd.DataFrame(registros_validos)
+
+# --- FILTRAR ÚLTIMOS 3 MESES ---
+# Data limite: hoje menos 3 meses
+data_limite = data_de_hoje.replace(day=1)  # início do mês atual
+# Para subtrair 3 meses corretamente, usamos relativedelta
+from dateutil.relativedelta import relativedelta
+data_limite = data_de_hoje - relativedelta(months=3)
+
+# Filtra registros válidos dos últimos 3 meses
+df_ultimos_3_meses = df_ponto_validado[df_ponto_validado['data_hora'].dt.date >= data_limite]
+
+# Ordena por funcionário e data/hora
+df_ultimos_3_meses = df_ultimos_3_meses.sort_values(by=['Nome', 'data_hora'])
+
+# Apenas para conferência
+print(f"\n--- Registros dos últimos 3 meses ---\n")
+print(df_ultimos_3_meses[['Nome', 'Secao', 'data_hora', 'origem']].head(20))
+
+# Salvar em TXT
+nome_arquivo_3m_txt = f"Registros_Ultimos3Meses_{data_de_hoje.strftime('%Y%m%d')}.txt"
+df_ultimos_3_meses.to_csv(nome_arquivo_3m_txt, index=False, sep=";", encoding="utf-8")
+
+# Salvar em Excel
+nome_arquivo_3m_xlsx = f"Registros_Ultimos3Meses_{data_de_hoje.strftime('%Y%m%d')}.xlsx"
+df_ultimos_3_meses.to_excel(nome_arquivo_3m_xlsx, index=False)
 
 
 # Filtra apenas funcionários com um único registro de ponto
