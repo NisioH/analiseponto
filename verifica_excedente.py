@@ -87,9 +87,9 @@ if not df_ponto_validado.empty:
 
     df_relatorio = pd.DataFrame(relatorio, columns=['Data','Nome','CPF','Secao','Batidas','Excedente'])
 
-    df_relatorio.to_excel("Relatorio_Excedentes.xlsx", index=False)
+    df_relatorio.to_excel(f"Relatorio_Excedentes_{ontem}.xlsx", index=False)
 
-    with open("Relatorio_Excedentes.txt", 'w', encoding='utf-8') as f:
+    with open(f"Relatorio_Excedentes_{ontem}.txt", 'w', encoding='utf-8') as f:
         f.write("RELATÓRIO DE HORAS EXCEDENTES (>2h além da meta de 7h20)\n")
         f.write("="*95 + "\n")
         f.write(f"{'DATA':<12} {'NOME':<30} {'CPF':<15} {'SEÇÃO':<15} {'BATIDAS':<25} {'EXCEDENTE':<8}\n")
@@ -97,6 +97,6 @@ if not df_ponto_validado.empty:
         for _, item in df_relatorio.iterrows():
             f.write(f"{item['Data']:<12} {item['Nome']:<30} {item['CPF']:<15} {item['Secao']:<15} {item['Batidas']:<25} {item['Excedente']:<8}\n")
 
-    print("📂 Relatórios gerados: Relatorio_Excedentes.xlsx e Relatorio_Excedentes.txt")
+    print(f"📂 Relatórios gerados: Relatorio_Excedentes{ontem}.xlsx e Relatorio_Excedentes{ontem}.txt")
 else:
     print("✅ Ontem nenhum funcionário ultrapassou 2h extras.")

@@ -38,6 +38,7 @@ Ponto_Sede.txt
 Ponto_Algodoeira.txt
 Ponto_Escritorio.txt
 *.txt
+*.xlsx
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

@@ -87,9 +87,9 @@ if not df_ponto_validado.empty:
     df_relatorio = pd.DataFrame(relatorio, columns=['Nome','CPF','Data','Secao','Batidas','Almoco'])
 
     if not df_relatorio.empty:
-        df_relatorio.to_excel("Relatorio_Almoco.xlsx", index=False)
+        df_relatorio.to_excel(f"Relatorio_Almoco_{ontem}.xlsx", index=False)
 
-        with open("Relatorio_Almoco.txt", 'w', encoding='utf-8') as f:
+        with open(f"Relatorio_Almoco_{ontem}.txt", 'w', encoding='utf-8') as f:
             f.write("RELATÓRIO DE INTERVALO DE ALMOÇO < 1h\n")
             f.write("="*95 + "\n")
             f.write(f"{'NOME':<30} {'CPF':<15} {'DATA':<12} {'SEÇÃO':<15} {'BATIDAS':<25} {'ALMOÇO':<8}\n")
@@ -97,7 +97,7 @@ if not df_ponto_validado.empty:
             for _, item in df_relatorio.iterrows():
                 f.write(f"{item['Nome']:<30} {item['CPF']:<15} {item['Data']:<12} {item['Secao']:<15} {item['Batidas']:<25} {item['Almoco']:<8}\n")
 
-        print("📂 Relatórios gerados: Relatorio_Almoco.xlsx e Relatorio_Almoco.txt")
+        print(f"📂 Relatórios gerados: Relatorio_Almoco_{ontem}.xlsx e Relatorio_Almoco_{ontem}.txt")
     else:
         print("✅ Nenhum funcionário fez almoço menor que 1h.")
 else:
