@@ -1,7 +1,6 @@
 import pandas as pd
 import io
-from datetime import datetime
-from datetime import date
+from datetime import datetime, date
 
 
 data_de_hoje = datetime.now().date()
