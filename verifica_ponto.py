@@ -133,7 +133,7 @@ with open(nome_arquivo_saida_txt, 'w', encoding='utf-8') as f:
     f.write(output_buffer.getvalue())
 
 # --- SALVANDO O EXCEL ---
-nome_arquivo_saida_xlsx = f"Relatorio_Presenca_{data_alvo.strftime('%Y%m%d')}.xlsx"
+""" nome_arquivo_saida_xlsx = f"Relatorio_Presenca_{data_alvo.strftime('%Y%m%d')}.xlsx"
 
 with pd.ExcelWriter(nome_arquivo_saida_xlsx, engine='xlsxwriter') as writer:
     if not df_excel.empty:
@@ -149,4 +149,4 @@ with pd.ExcelWriter(nome_arquivo_saida_xlsx, engine='xlsxwriter') as writer:
 
 total_funcionarios = len(df_txt) if not df_txt.empty else 0
 print(f"Total de funcionários processados: {total_funcionarios}")
-print(f"Relatórios gerados com sucesso:\n- {nome_arquivo_saida_txt}\n- {nome_arquivo_saida_xlsx}")
+print(f"Relatórios gerados com sucesso:\n- {nome_arquivo_saida_txt}\n- {nome_arquivo_saida_xlsx}") """
