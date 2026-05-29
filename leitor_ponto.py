@@ -50,31 +50,6 @@ for index, row in df_ponto_raw.iterrows():
 
 df_ponto_validado = pd.DataFrame(registros_validos)
 
-# --- FILTRAR ÚLTIMOS 3 MESES ---
-# Data limite: hoje menos 3 meses
-data_limite = data_de_hoje.replace(day=1)  # início do mês atual
-# Para subtrair 3 meses corretamente, usamos relativedelta
-from dateutil.relativedelta import relativedelta
-data_limite = data_de_hoje - relativedelta(months=3)
-
-# Filtra registros válidos dos últimos 3 meses
-df_ultimos_3_meses = df_ponto_validado[df_ponto_validado['data_hora'].dt.date >= data_limite]
-
-# Ordena por funcionário e data/hora
-df_ultimos_3_meses = df_ultimos_3_meses.sort_values(by=['Nome', 'data_hora'])
-
-# Apenas para conferência
-print(f"\n--- Registros dos últimos 3 meses ---\n")
-print(df_ultimos_3_meses[['Nome', 'Secao', 'data_hora', 'origem']].head(20))
-
-# Salvar em TXT
-nome_arquivo_3m_txt = f"Registros_Ultimos3Meses_{data_de_hoje.strftime('%Y%m%d')}.txt"
-df_ultimos_3_meses.to_csv(nome_arquivo_3m_txt, index=False, sep=";", encoding="utf-8")
-
-# Salvar em Excel
-nome_arquivo_3m_xlsx = f"Registros_Ultimos3Meses_{data_de_hoje.strftime('%Y%m%d')}.xlsx"
-df_ultimos_3_meses.to_excel(nome_arquivo_3m_xlsx, index=False)
-
 
 # Filtra apenas funcionários com um único registro de ponto
 df_unico_ponto = df_ponto_validado[df_ponto_validado['NIT'].map(df_ponto_validado['NIT'].value_counts()) == 1]
