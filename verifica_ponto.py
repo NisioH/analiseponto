@@ -1,9 +1,10 @@
 import pandas as pd
 import io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 # 1. Define a data alvo como ONTEM
-data_alvo = datetime.now().date() - timedelta(days=1)
+#data_alvo = datetime.now().date() - timedelta(days=1)
+data_alvo = date(2026, 5, 26)
 
 arquivos = ['Ponto_Algodoeira.txt', 'Ponto_Escritorio.txt', 'Ponto_Sede.txt', 'Ponto_Secador.txt']
 dfs_ponto = []
