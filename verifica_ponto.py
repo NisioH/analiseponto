@@ -7,13 +7,13 @@ escolha_dia = input('Qual data pesquisar?\n\n Para ontem digite: 1\n\n Para uma 
 
 if escolha_dia == '1':
     data_alvo = datetime.now().date() - timedelta(days=1)
-    print('\nBuscando...')
+    print('\nBuscando...\n')
 
 else:
     data_input = input('\nDigite a data no formato DD/MM/AAAA: ')
     try:
         data_alvo = datetime.strptime(data_input, '%d/%m/%Y').date()
-        print('\nBuscando...')
+        print('\nBuscando...\n')
     except ValueError:
         print("Data inválida. Usando a data de ontem por padrão.")
         data_alvo = datetime.now().date() - timedelta(days=1)
@@ -86,12 +86,12 @@ if not df_ponto_validado.empty:
                                      values='Registro_TXT').reset_index()
 
     # Gira a tabela separando os valores de Horário e Local
-    df_excel = df_ponto_validado.pivot(index=['NIT', 'Nome', 'Secao'], columns='Batida_Num',
-                                       values=['Horario', 'Local'])
+    """ df_excel = df_ponto_validado.pivot(index=['NIT', 'Nome', 'Secao'], columns='Batida_Num',
+                                       values=['Horario', 'Local']) """
 
     # Renomeia as colunas do Excel para ficarem planas (Ex: 'Horario 1', 'Local 1')
-    df_excel.columns = [f"{col[0]} {col[1]}" for col in df_excel.columns]
-    df_excel = df_excel.reset_index()
+    """ df_excel.columns = [f"{col[0]} {col[1]}" for col in df_excel.columns]
+    df_excel = df_excel.reset_index() """
 
 else:
     df_txt = pd.DataFrame(columns=['NIT', 'Nome', 'Secao'])
@@ -114,7 +114,7 @@ if not df_txt.empty:
     for secao, grupo in df_txt.groupby('Secao'):
         output_buffer.write(f"\n#####################################################\n")
         output_buffer.write(f"SEÇÃO: {secao}\n")
-        output_buffer.write(f"TOTAL DE FUNCIONÁRIOS NA SEÇÃO: {len(grupo)}\n")
+        output_buffer.write(f"TOTAL DE FUNCIONÁRIOS {secao}: {len(grupo)}\n")
         output_buffer.write(f"#####################################################\n\n")
 
         # Pega a quantidade de batidas dinamicamente
