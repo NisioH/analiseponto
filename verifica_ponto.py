@@ -2,9 +2,22 @@ import pandas as pd
 import io
 from datetime import datetime, timedelta, date
 
-# 1. Define a data alvo como ONTEM
-#data_alvo = datetime.now().date() - timedelta(days=1)
-data_alvo = date(2026, 5, 26)
+# 1. Define a data alvo 
+escolha_dia = input('Qual data pesquisar?\n\n Para ontem digite: 1\n\n Para uma data anterior ao dia de ontem digite: 2\n\n ')
+
+if escolha_dia == '1':
+    data_alvo = datetime.now().date() - timedelta(days=1)
+    print('\nBuscando...')
+
+else:
+    data_input = input('\nDigite a data no formato DD/MM/AAAA: ')
+    try:
+        data_alvo = datetime.strptime(data_input, '%d/%m/%Y').date()
+        print('\nBuscando...')
+    except ValueError:
+        print("Data inválida. Usando a data de ontem por padrão.")
+        data_alvo = datetime.now().date() - timedelta(days=1)
+
 
 arquivos = ['Ponto_Algodoeira.txt', 'Ponto_Escritorio.txt', 'Ponto_Sede.txt', 'Ponto_Secador.txt']
 dfs_ponto = []
