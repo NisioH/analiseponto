@@ -22,7 +22,7 @@ for arquivo in arquivos:
     dfs_ponto.append(df)
 df_ponto_raw = pd.concat(dfs_ponto, ignore_index=True)
 
-df_funcionarios = pd.read_excel(r'C:\Users\fazin\OneDrive\Documents\Nisio\analiseponto\Funcionarios.xlsx')
+df_funcionarios = pd.read_excel('Funcionarios.xlsx')
 df_funcionarios['NIT_STR'] = df_funcionarios['NIT'].astype(str)
 df_funcionarios.rename(columns=lambda x: x.strip(), inplace=True)
 

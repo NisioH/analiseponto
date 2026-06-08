@@ -2,18 +2,14 @@ import pandas as pd
 import io
 from datetime import datetime, timedelta, date
 
-# 1. Define as datas alvo (pode ser um dia ou um intervalo de dias)
 escolha_dia = input('Qual data pesquisar?\n\n Para ontem digite: 1\n\n Para uma data anterior ao dia de ontem digite: 2\n\n ')
 
 datas_alvo = []
 hoje = datetime.now().date()
 
 if escolha_dia == '1':
-    # Ontem padrão
     ontem = hoje - timedelta(days=1)
     
-    # Se hoje for SEGUNDA-FEIRA (weekday == 0), pegamos Sábado, Domingo e Segunda (ou Sexta/Sáb/Dom conforme D-1)
-    # Para ler Sábado e Domingo especificamente na segunda, checamos o dia de hoje:
     if hoje.weekday() == 0: 
         print('\n[DETECTADO SEGUNDA-FEIRA] Buscando registros acumulados de Sábado e Domingo...')
         sabado = hoje - timedelta(days=2)
@@ -34,7 +30,6 @@ else:
         print("Data inválida. Usando a data de ontem por padrão.")
         datas_alvo = [hoje - timedelta(days=1)]
 
-# Formatação do nome do arquivo final baseado nas datas pesquisadas
 if len(datas_alvo) > 1:
     string_data_arquivo = f"{datas_alvo[0].strftime('%Y%m%d')}_a_{datas_alvo[-1].strftime('%Y%m%d')}"
     titulo_relatorio = f"PERÍODO: {datas_alvo[0].strftime('%d/%m/%Y')} a {datas_alvo[-1].strftime('%d/%m/%Y')}"
@@ -59,7 +54,7 @@ if not dfs_ponto:
 
 df_ponto_raw = pd.concat(dfs_ponto, ignore_index=True)
 
-df_funcionarios = pd.read_excel(r'C:\Users\fazin\OneDrive\Documents\Nisio\Analise_Ponto\Funcionarios.xlsx')
+df_funcionarios = pd.read_excel('Funcionarios.xlsx')
 df_funcionarios['NIT_STR'] = df_funcionarios['NIT'].astype(str)
 
 # Padroniza a nomenclatura da seção
@@ -106,8 +101,7 @@ for index, row in df_ponto_raw.iterrows():
 df_ponto_validado = pd.DataFrame(registros_validos)
 
 if not df_ponto_validado.empty:
-    # Inclui o dia da semana abreviado no registro para ficar fácil identificar se foi Sáb ou Dom
-    # Exemplo: "Sáb 08:00 (Sede)" ou "Dom 12:00 (Secador)"
+   
     dias_semana_pt = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sáb', 6: 'Dom'}
     df_ponto_validado['Dia_Semana'] = df_ponto_validado['data_hora'].dt.weekday.map(dias_semana_pt)
     df_ponto_validado['Horario'] = df_ponto_validado['data_hora'].dt.strftime('%H:%M')
