@@ -14,7 +14,7 @@ for arquivo in arquivos:
     dfs_ponto.append(df)
 df_ponto_raw = pd.concat(dfs_ponto, ignore_index=True)
 
-df_funcionarios = pd.read_excel(r'C:\Users\fazin\OneDrive\Documents\Nisio\Analise_Ponto\Funcionarios.xlsx')
+df_funcionarios = pd.read_excel('Funcionarios.xlsx')
 df_funcionarios['NIT_STR'] = df_funcionarios['NIT'].astype(str)
 nit_to_nome = df_funcionarios.set_index('NIT_STR')['Nome'].to_dict()
 nit_to_secao = df_funcionarios.set_index('NIT_STR')['Secao'].to_dict()
