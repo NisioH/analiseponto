@@ -2,29 +2,61 @@ import pandas as pd
 import io
 from datetime import datetime, timedelta, date
 
-# 1. Define a data alvo 
+# 1. Define as datas alvo (pode ser um dia ou um intervalo de dias)
 escolha_dia = input('Qual data pesquisar?\n\n Para ontem digite: 1\n\n Para uma data anterior ao dia de ontem digite: 2\n\n ')
 
+datas_alvo = []
+hoje = datetime.now().date()
+
 if escolha_dia == '1':
-    data_alvo = datetime.now().date() - timedelta(days=1)
+    # Ontem padrão
+    ontem = hoje - timedelta(days=1)
+    
+    # Se hoje for SEGUNDA-FEIRA (weekday == 0), pegamos Sábado, Domingo e Segunda (ou Sexta/Sáb/Dom conforme D-1)
+    # Para ler Sábado e Domingo especificamente na segunda, checamos o dia de hoje:
+    if hoje.weekday() == 0: 
+        print('\n[DETECTADO SEGUNDA-FEIRA] Buscando registros acumulados de Sábado e Domingo...')
+        sabado = hoje - timedelta(days=2)
+        domingo = hoje - timedelta(days=1)
+        datas_alvo = [sabado, domingo]
+    else:
+        datas_alvo = [ontem]
+    
     print('\nBuscando...\n')
 
 else:
     data_input = input('\nDigite a data no formato DD/MM/AAAA: ')
     try:
-        data_alvo = datetime.strptime(data_input, '%d/%m/%Y').date()
+        data_digitada = datetime.strptime(data_input, '%d/%m/%Y').date()
+        datas_alvo = [data_digitada]
         print('\nBuscando...\n')
     except ValueError:
         print("Data inválida. Usando a data de ontem por padrão.")
-        data_alvo = datetime.now().date() - timedelta(days=1)
+        datas_alvo = [hoje - timedelta(days=1)]
+
+# Formatação do nome do arquivo final baseado nas datas pesquisadas
+if len(datas_alvo) > 1:
+    string_data_arquivo = f"{datas_alvo[0].strftime('%Y%m%d')}_a_{datas_alvo[-1].strftime('%Y%m%d')}"
+    titulo_relatorio = f"PERÍODO: {datas_alvo[0].strftime('%d/%m/%Y')} a {datas_alvo[-1].strftime('%d/%m/%Y')}"
+else:
+    string_data_arquivo = datas_alvo[0].strftime('%Y%m%d')
+    titulo_relatorio = f"DATA: {datas_alvo[0].strftime('%d/%m/%Y')}"
 
 
 arquivos = ['Ponto_Algodoeira.txt', 'Ponto_Escritorio.txt', 'Ponto_Sede.txt', 'Ponto_Secador.txt']
 dfs_ponto = []
 for arquivo in arquivos:
-    df = pd.read_csv(arquivo, header=None, names=['linha_completa'], encoding='latin-1')
-    df['origem'] = arquivo
-    dfs_ponto.append(df)
+    try:
+        df = pd.read_csv(arquivo, header=None, names=['linha_completa'], encoding='latin-1')
+        df['origem'] = arquivo
+        dfs_ponto.append(df)
+    except FileNotFoundError:
+        print(f"Aviso: O arquivo arquivo '{arquivo}' não foi encontrado e será ignorado.")
+
+if not dfs_ponto:
+    print("Nenhum arquivo de ponto de origem encontrado. Encerrando execução.")
+    exit()
+
 df_ponto_raw = pd.concat(dfs_ponto, ignore_index=True)
 
 df_funcionarios = pd.read_excel(r'C:\Users\fazin\OneDrive\Documents\Nisio\Analise_Ponto\Funcionarios.xlsx')
@@ -35,6 +67,7 @@ df_funcionarios['Secao'] = df_funcionarios['Secao'].replace('Colaboradores sede'
 
 nit_to_nome = df_funcionarios.set_index('NIT_STR')['Nome'].to_dict()
 nit_to_secao = df_funcionarios.set_index('NIT_STR')['Secao'].to_dict()
+
 
 # --- VALIDAÇÃO DE NIT E DATA ---
 registros_validos = []
@@ -51,18 +84,19 @@ for index, row in df_ponto_raw.iterrows():
             data_str = linha_completa[10:18]
             data_do_ponto = datetime.strptime(data_str, '%d%m%Y').date()
 
-            # Filtrar os registros de ontem
-            if data_do_ponto == data_alvo:
+            # Filtrar se a data do ponto está na nossa lista de datas alvo (Sábado, Domingo, etc.)
+            if data_do_ponto in datas_alvo:
                 hora_str = linha_completa[18:22]
                 data_hora = datetime.strptime(data_str + hora_str, '%d%m%Y%H%M')
 
-                # pro nome ficar limpo ('Ponto_Sede.txt' vira 'Sede')
+                # Pro nome ficar limpo ('Ponto_Sede.txt' vira 'Sede')
                 local_limpo = row['origem'].replace('Ponto_', '').replace('.txt', '')
 
                 registros_validos.append({
                     'NIT': nit_encontrado,
                     'Nome': nit_to_nome.get(nit_encontrado, 'N/A'),
                     'Secao': nit_to_secao.get(nit_encontrado, 'N/A'),
+                    'data_do_ponto': data_do_ponto, # Mantemos o controle do dia específico da batida
                     'data_hora': data_hora,
                     'Local': local_limpo
                 })
@@ -72,95 +106,75 @@ for index, row in df_ponto_raw.iterrows():
 df_ponto_validado = pd.DataFrame(registros_validos)
 
 if not df_ponto_validado.empty:
+    # Inclui o dia da semana abreviado no registro para ficar fácil identificar se foi Sáb ou Dom
+    # Exemplo: "Sáb 08:00 (Sede)" ou "Dom 12:00 (Secador)"
+    dias_semana_pt = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sáb', 6: 'Dom'}
+    df_ponto_validado['Dia_Semana'] = df_ponto_validado['data_hora'].dt.weekday.map(dias_semana_pt)
     df_ponto_validado['Horario'] = df_ponto_validado['data_hora'].dt.strftime('%H:%M')
 
     df_ponto_validado = df_ponto_validado.sort_values(by=['Nome', 'data_hora'])
 
-    df_ponto_validado['Batida_Num'] = df_ponto_validado.groupby('NIT').cumcount() + 1
+    # O contador de batidas agora reinicia por Funcionário E por Dia (essencial para o fim de semana não misturar tudo)
+    df_ponto_validado['Batida_Num'] = df_ponto_validado.groupby(['NIT', 'data_do_ponto']).cumcount() + 1
 
-    # Cria uma string combinada: "08:00 (Sede)"
-    df_ponto_validado['Registro_TXT'] = df_ponto_validado['Horario'] + " (" + df_ponto_validado['Local'] + ")"
+    # Formato do texto que vai para a coluna
+    df_ponto_validado['Registro_TXT'] = df_ponto_validado['Dia_Semana'] + " " + df_ponto_validado['Horario'] + " (" + df_ponto_validado['Local'] + ")"
 
-    # Gira a tabela (pivot) para colocar as batidas em colunas
-    df_txt = df_ponto_validado.pivot(index=['NIT', 'Nome', 'Secao'], columns='Batida_Num',
+    # Gira a tabela (pivot). Incluímos 'data_do_ponto' para separar as linhas do mesmo funcionário se ele trabalhou nos dois dias
+    df_txt = df_ponto_validado.pivot(index=['NIT', 'Nome', 'Secao', 'data_do_ponto'], columns='Batida_Num',
                                      values='Registro_TXT').reset_index()
-
-    # Gira a tabela separando os valores de Horário e Local
-    """ df_excel = df_ponto_validado.pivot(index=['NIT', 'Nome', 'Secao'], columns='Batida_Num',
-                                       values=['Horario', 'Local']) """
-
-    # Renomeia as colunas do Excel para ficarem planas (Ex: 'Horario 1', 'Local 1')
-    """ df_excel.columns = [f"{col[0]} {col[1]}" for col in df_excel.columns]
-    df_excel = df_excel.reset_index() """
-
 else:
-    df_txt = pd.DataFrame(columns=['NIT', 'Nome', 'Secao'])
-    df_excel = pd.DataFrame(columns=['NIT', 'Nome', 'Secao'])
+    df_txt = pd.DataFrame(columns=['NIT', 'Nome', 'Secao', 'data_do_ponto'])
 
-print(f"\n--- Geração do Relatório de Presença ({data_alvo.strftime('%d/%m/%Y')}) ---\n")
+print(f"\n--- Geração do Relatório de Presença ({titulo_relatorio}) ---\n")
 
 output_buffer = io.StringIO()
 
 # --- SALVANDO O TXT ---
 if not df_txt.empty:
-    df_txt = df_txt.sort_values(by=['Secao', 'Nome'])
+    # Ordena por Seção, Nome e Data do Ponto
+    df_txt = df_txt.sort_values(by=['Secao', 'Nome', 'data_do_ponto'])
 
     MAX_NOME_LEN = df_txt['Nome'].str.len().max()
     NOME_PAD_LEN = max(MAX_NOME_LEN, 40) + 2
 
-    output_buffer.write(f"RELATÓRIO DE PRESENÇA E LOCAIS - DATA: {data_alvo.strftime('%d/%m/%Y')}\n")
-    output_buffer.write("-" * 120 + "\n")
+    output_buffer.write(f"RELATÓRIO DE PRESENÇA E LOCAIS - {titulo_relatorio}\n")
+    output_buffer.write("-" * 140 + "\n")
 
     for secao, grupo in df_txt.groupby('Secao'):
         output_buffer.write(f"\n#####################################################\n")
         output_buffer.write(f"SEÇÃO: {secao}\n")
-        output_buffer.write(f"TOTAL DE FUNCIONÁRIOS {secao}: {len(grupo)}\n")
+        output_buffer.write(f"TOTAL DE REGISTROS NA SEÇÃO: {len(grupo)}\n")
         output_buffer.write(f"#####################################################\n\n")
 
-        # Pega a quantidade de batidas dinamicamente
+        # Pega a quantidade máxima de batidas dinamicamente
         colunas_batidas = [c for c in grupo.columns if isinstance(c, int)]
 
-        cabecalho = f"| {'NOME DO FUNCIONÁRIO':<{NOME_PAD_LEN}} |"
-        linha_sep = f"|{'-' * (NOME_PAD_LEN + 2)}|"
+        cabecalho = f"| {'NOME DO FUNCIONÁRIO':<{NOME_PAD_LEN}} | {'DATA':<10} |"
+        linha_sep = f"|{'-' * (NOME_PAD_LEN + 2)}|{'-' * 12}|"
 
         for col in colunas_batidas:
-            cabecalho += f" {'BATIDA ' + str(col):<20} |"
-            linha_sep += f"{'-' * 22}|"
+            cabecalho += f" {'BATIDA ' + str(col):<22} |"
+            linha_sep += f"{'-' * 24}|"
 
         output_buffer.write(cabecalho + "\n")
         output_buffer.write(linha_sep + "\n")
 
         for _, item in grupo.iterrows():
-            linha_func = f"| {item['Nome']:<{NOME_PAD_LEN}} |"
+            data_formatada = item['data_do_ponto'].strftime('%d/%m/%Y')
+            linha_func = f"| {item['Nome']:<{NOME_PAD_LEN}} | {data_formatada:<10} |"
+            
             for col in colunas_batidas:
-                # Se não bateu o ponto nessa sequência, coloca "---"
                 registro = str(item[col]) if pd.notna(item[col]) else "---"
-                linha_func += f" {registro:<20} |"
+                linha_func += f" {registro:<22} |"
             output_buffer.write(linha_func + "\n")
 
         output_buffer.write("\n")
 else:
-    output_buffer.write("Nenhum registro encontrado para a data especificada.\n")
+    output_buffer.write("Nenhum registro encontrado para a data/período especificado.\n")
 
-nome_arquivo_saida_txt = f"Relatorio_Presenca_{data_alvo.strftime('%Y%m%d')}.txt"
+nome_arquivo_saida_txt = f"Relatorio_Presenca_{string_data_arquivo}.txt"
 with open(nome_arquivo_saida_txt, 'w', encoding='utf-8') as f:
     f.write(output_buffer.getvalue())
 
-# --- SALVANDO O EXCEL ---
-""" nome_arquivo_saida_xlsx = f"Relatorio_Presenca_{data_alvo.strftime('%Y%m%d')}.xlsx"
-
-with pd.ExcelWriter(nome_arquivo_saida_xlsx, engine='xlsxwriter') as writer:
-    if not df_excel.empty:
-        df_excel = df_excel.sort_values(by=['Secao', 'Nome'])
-        for secao, grupo in df_excel.groupby('Secao'):
-            aba = str(secao)[:31]
-            # Removemos NIT e Secao para limpar a aba
-            df_secao = grupo.drop(columns=['NIT', 'Secao'])
-            df_secao.rename(columns={'Nome': 'NOME DO FUNCIONÁRIO'}, inplace=True)
-            df_secao.to_excel(writer, sheet_name=aba, index=False)
-    else:
-        pd.DataFrame(columns=['Aviso']).to_excel(writer, sheet_name='Sem Dados', index=False)
-
-total_funcionarios = len(df_txt) if not df_txt.empty else 0
-print(f"Total de funcionários processados: {total_funcionarios}")
-print(f"Relatórios gerados com sucesso:\n- {nome_arquivo_saida_txt}\n- {nome_arquivo_saida_xlsx}") """
+print(f"Relatório gerado com sucesso: {nome_arquivo_saida_txt}")
